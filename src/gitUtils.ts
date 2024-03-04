@@ -1,45 +1,38 @@
-import { exec } from '@actions/exec'
+import { $ } from 'zx'
 
 import { env } from './env.js'
-import { execWithOutput, identify } from './utils.js'
 
 export const setupUser = async () => {
-  await exec('git', [
-    'config',
-    'user.name',
-    env.GITLAB_CI_USER_NAME || env.GITLAB_USER_NAME,
-  ])
-  await exec('git', ['config', 'user.email', env.GITLAB_CI_USER_EMAIL])
+  await $`git config user.name ${
+    env.GITLAB_CI_USER_NAME || env.GITLAB_USER_NAME
+  }`
+  await $`git config user.email ${env.GITLAB_CI_USER_EMAIL}`
 }
 
 export const pullBranch = async (branch: string) => {
-  await exec('git', ['pull', 'origin', branch])
+  await $`git pull origin ${branch}`
 }
 
 export const push = async (
   branch: string,
   { force }: { force?: boolean } = {},
 ) => {
-  await exec(
-    'git',
-    ['push', 'origin', `HEAD:${branch}`, force && '--force'].filter(identify),
-  )
+  await $`git push origin HEAD:${branch} ${force && '--force'}`
 }
 
 export const pushTags = async () => {
-  await exec('git', ['push', 'origin', '--tags'])
+  await $`git push origin --tags`
 }
 
 export const switchToMaybeExistingBranch = async (branch: string) => {
-  const { stderr } = await execWithOutput('git', ['checkout', branch], {
-    ignoreReturnCode: true,
-  })
+  const { stderr } = await $`git checkout ${branch}`
+
   const isCreatingBranch =
     !stderr.includes(`Switched to branch '${branch}'`) &&
     // it could be a detached HEAD
     !stderr.includes(`Switched to a new branch '${branch}'`)
   if (isCreatingBranch) {
-    await exec('git', ['checkout', '-b', branch])
+    await $`git checkout -b ${branch}`
   }
 }
 
@@ -47,15 +40,15 @@ export const reset = async (
   pathSpec: string,
   mode: 'hard' | 'mixed' | 'soft' = 'hard',
 ) => {
-  await exec('git', ['reset', `--${mode}`, pathSpec])
+  await $`git reset --${mode} ${pathSpec}`
 }
 
 export const commitAll = async (message: string) => {
-  await exec('git', ['add', '-A', '.'])
-  await exec('git', ['commit', '-m', message])
+  await $`git add -A .`
+  await $`git commit -m ${message}`
 }
 
 export const checkIfClean = async (): Promise<boolean> => {
-  const { stdout } = await execWithOutput('git', ['status', '--porcelain'])
+  const { stdout } = await $`git status --porcelain`
   return stdout.length === 0
 }

@@ -1,4 +1,3 @@
-import { setFailed } from '@actions/core'
 import dotenv from 'dotenv'
 
 import type { Env } from './types'
@@ -26,7 +25,8 @@ export const env = {
     if (!isGitlabTokenValidated) {
       isGitlabTokenValidated = true
       if (!process.env.GITLAB_TOKEN) {
-        setFailed('Please add the `GITLAB_TOKEN` to the changesets action')
+        console.error('Please add the `GITLAB_TOKEN` to the changesets action')
+        process.exitCode = 1
       }
     }
     return process.env.GITLAB_TOKEN!

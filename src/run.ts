@@ -1,20 +1,19 @@
 import _ from 'node:module'
 import path from 'node:path'
 
-import { exec } from '@actions/exec'
 import type { Gitlab } from '@gitbeaker/core'
 import type { Package } from '@manypkg/get-packages'
 import { getPackages } from '@manypkg/get-packages'
 import fs from 'fs-extra'
 import resolveFrom from 'resolve-from'
 import semver from 'semver'
+import { $, cd, within } from 'zx'
 
 import * as context from './context.js'
 import * as gitUtils from './gitUtils.js'
 import readChangesetState from './readChangesetState.js'
 import {
   getChangelogEntry,
-  execWithOutput,
   getChangedPackages,
   sortTheThings,
   getVersionsByDirectory,
@@ -84,13 +83,11 @@ export async function runPublish({
   cwd = process.cwd(),
 }: PublishOptions): Promise<PublishResult> {
   const api = createApi(gitlabToken)
-  const [publishCommand, ...publishArgs] = script.split(/\s+/)
 
-  const changesetPublishOutput = await execWithOutput(
-    publishCommand,
-    publishArgs,
-    { cwd },
-  )
+  const changesetPublishOutput = await within(async () => {
+    cd(cwd)
+    return $`${script}`
+  })
 
   await gitUtils.pushTags()
 
@@ -212,21 +209,25 @@ export async function runVersion({
   const { preState } = await readChangesetState(cwd)
 
   await gitUtils.switchToMaybeExistingBranch(versionBranch)
-  await exec('git', ['fetch', 'origin', currentBranch])
+  await $`git fetch origin ${currentBranch}`
   await gitUtils.reset(`origin/${currentBranch}`)
 
   const versionsByDirectory = await getVersionsByDirectory(cwd)
 
   if (script) {
-    const [versionCommand, ...versionArgs] = script.split(/\s+/)
-    await exec(versionCommand, versionArgs, { cwd })
+    await within(async () => {
+      cd(cwd)
+      await $`${script}`
+    })
   } else {
     const changesetsCliPkgJson = requireChangesetsCliPkgJson(cwd)
     const cmd = semver.lt(changesetsCliPkgJson.version, '2.0.0')
       ? 'bump'
       : 'version'
-    await exec('node', [resolveFrom(cwd, '@changesets/cli/bin.js'), cmd], {
-      cwd,
+
+    await within(async () => {
+      cd(cwd)
+      await $`node ${resolveFrom(cwd, '@changesets/cli/bin.js')} ${cmd}`
     })
   }
 

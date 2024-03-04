@@ -1,15 +1,14 @@
 import { URL } from 'node:url'
 
-import { getInput, setFailed, setOutput, exportVariable } from '@actions/core'
-import { exec } from '@actions/exec'
 import fs from 'fs-extra'
+import { $ } from 'zx'
 
 import { env } from './env.js'
 import { setupUser } from './gitUtils.js'
 import readChangesetState from './readChangesetState.js'
 import { runPublish, runVersion } from './run.js'
 import type { MainCommandOptions } from './types.js'
-import { execSync, getOptionalInput, getUsername } from './utils.js'
+import { getUsername } from './utils.js'
 
 import { createApi } from './index.js'
 
@@ -24,10 +23,17 @@ export const main = async ({
     HOME,
     NPM_TOKEN,
     DEBUG_GITLAB_CREDENTIAL = 'false',
+    INPUT_PUBLISH,
+    INPUT_CREATE_GITLAB_RELEASES,
+    INPUT_VERSION,
+    INPUT_COMMIT,
+    INPUT_REMOVE_SOURCE_BRANCH,
+    INPUT_TARGET_BRANCH,
+    INPUT_TITLE,
   } = env
 
-  setOutput('published', false)
-  setOutput('publishedPackages', [])
+  fs.writeFileSync('published.json', 'false')
+  fs.writeFileSync('publishedPackages.json', '[]')
 
   if (CI) {
     console.log('setting git user')
@@ -38,23 +44,21 @@ export const main = async ({
     console.log('setting GitLab credentials')
     const username = await getUsername(createApi())
 
-    await exec(
-      'git',
-      [
-        'remote',
-        'set-url',
-        'origin',
-        `${url.protocol}//${username}:${GITLAB_TOKEN}@${
-          url.host
-        }${url.pathname.replace(/\/$/, '')}/${env.CI_PROJECT_PATH}.git`, // eslint-disable-line unicorn/consistent-destructuring
-      ],
-      { silent: !['true', '1'].includes(DEBUG_GITLAB_CREDENTIAL) },
-    )
+    const origin = `${url.protocol}//${username}:${GITLAB_TOKEN}@${
+      url.host
+      // eslint-disable-next-line unicorn/consistent-destructuring
+    }${url.pathname.replace(/\/$/, '')}/${env.CI_PROJECT_PATH}.git`
+
+    const verbose = $.verbose
+
+    $.verbose = ['true', '1'].includes(DEBUG_GITLAB_CREDENTIAL)
+    await $`git remote set-url origin ${origin}`
+    $.verbose = verbose
   }
 
   const { changesets } = await readChangesetState()
 
-  const publishScript = getInput('publish')
+  const publishScript = INPUT_PUBLISH
   const hasChangesets = changesets.length > 0
   const hasPublishScript = !!publishScript
 
@@ -78,41 +82,46 @@ export const main = async ({
           `//registry.npmjs.org/:_authToken=${NPM_TOKEN}`,
         )
       } else {
-        setFailed(
+        console.error(
           'No `.npmrc` found nor `NPM_TOKEN` provided, unable to publish packages',
         )
+        process.exitCode = 1
         return
       }
 
       const result = await runPublish({
         script: publishScript,
         gitlabToken: GITLAB_TOKEN,
-        createGitlabReleases: getInput('create_gitlab_releases') !== 'false',
+        createGitlabReleases:
+          // TODO CHECK WHAT HAPPENS FOR EMPTY STRING AND UNDEFINED
+          INPUT_CREATE_GITLAB_RELEASES?.toLowerCase() !== 'false',
       })
 
       if (result.published) {
-        setOutput('published', true)
-        setOutput('publishedPackages', result.publishedPackages)
-        exportVariable('PUBLISHED', true)
-        exportVariable('PUBLISHED_PACKAGES', result.publishedPackages)
+        fs.writeFileSync('./published.json', 'true')
+        fs.writeFileSync(
+          './published-packages.json',
+          JSON.stringify(result.publishedPackages, null, 2),
+        )
         if (published) {
-          execSync(published)
+          await $`${published}`
         }
       }
       return
     }
     case hasChangesets: {
       await runVersion({
-        script: getOptionalInput('version'),
+        script: INPUT_VERSION,
         gitlabToken: GITLAB_TOKEN,
-        mrTitle: getOptionalInput('title'),
-        mrTargetBranch: getOptionalInput('target_branch'),
-        commitMessage: getOptionalInput('commit'),
-        removeSourceBranch: getInput('remove_source_branch') === 'true',
+        mrTitle: INPUT_TITLE,
+        mrTargetBranch: INPUT_TARGET_BRANCH,
+        commitMessage: INPUT_COMMIT,
+        removeSourceBranch:
+          INPUT_REMOVE_SOURCE_BRANCH?.toLowerCase() === 'true',
         hasPublishScript,
       })
       if (onlyChangesets) {
-        execSync(onlyChangesets)
+        await $`${onlyChangesets}`
       }
     }
   }

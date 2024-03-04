@@ -25,6 +25,16 @@ export type Env = GitLabCIPredefinedVariables &
 
     HOME: string
     NPM_TOKEN?: string
+
+    INPUT_PUBLISH?: string
+    INPUT_CREATE_GITLAB_RELEASES?: string
+    INPUT_VERSION?: string
+    INPUT_TITLE?: string
+    INPUT_TARGET_BRANCH?: string
+    INPUT_COMMIT?: string
+    INPUT_REMOVE_SOURCE_BRANCH?: string
+    INPUT_PUBLISHED?: string
+    INPUT_ONLY_CHANGESETS?: string
   }
 
 type MergeRequestVariables =

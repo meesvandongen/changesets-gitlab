@@ -2,8 +2,6 @@ import { execSync as _execSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 
-import { getInput } from '@actions/core'
-import { exec } from '@actions/exec'
 import type { Gitlab } from '@gitbeaker/core'
 import type { Package } from '@manypkg/get-packages'
 import { getPackages } from '@manypkg/get-packages'
@@ -91,31 +89,6 @@ export function getChangelogEntry(changelog: string, version: string) {
   }
 }
 
-export async function execWithOutput(
-  command: string,
-  args?: string[],
-  options?: { ignoreReturnCode?: boolean; cwd?: string },
-) {
-  let myOutput = ''
-  let myError = ''
-
-  return {
-    code: await exec(command, args, {
-      listeners: {
-        stdout: (data: Buffer) => {
-          myOutput += data.toString()
-        },
-        stderr: (data: Buffer) => {
-          myError += data.toString()
-        },
-      },
-      ...options,
-    }),
-    stdout: myOutput,
-    stderr: myError,
-  }
-}
-
 export function sortTheThings(
   a: { private: boolean; highestLevel: number },
   b: { private: boolean; highestLevel: number },
@@ -153,8 +126,6 @@ export const execSync = (command: string) =>
   _execSync(command, {
     stdio: 'inherit',
   })
-
-export const getOptionalInput = (name: string) => getInput(name) || undefined
 
 export const getUsername = (api: Gitlab) => {
   return (
