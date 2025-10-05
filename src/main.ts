@@ -22,7 +22,7 @@ export const main = async ({
   published,
   onlyChangesets,
 }: MainCommandOptions = {}) => {
-  const { GITLAB_TOKEN, NPM_TOKEN } = env
+  const { GITLAB_TOKEN, NPM_TOKEN, NPM_ID_TOKEN } = env
 
   setOutput('published', false)
   setOutput('publishedPackages', [])
@@ -69,15 +69,20 @@ export const main = async ({
       const npmrcPath = `${env.HOME}/.npmrc`
       if (fs.existsSync(npmrcPath)) {
         console.log('Found existing .npmrc file')
+      } else if (NPM_ID_TOKEN) {
+        // Using npm Trusted Publishers: npm will exchange the OIDC token for a publish token internally.
+        console.log(
+          'Detected `NPM_ID_TOKEN`; skipping `.npmrc` creation (Trusted Publishers mode).',
+        )
       } else if (NPM_TOKEN) {
-        console.log('No .npmrc file found, creating one')
+        console.log('No .npmrc file found, creating one with `NPM_TOKEN`')
         await fs.promises.writeFile(
           npmrcPath,
           `//registry.npmjs.org/:_authToken=${NPM_TOKEN}`,
         )
       } else {
         setFailed(
-          'No `.npmrc` found nor `NPM_TOKEN` provided, unable to publish packages',
+          'No `.npmrc` found and neither `NPM_TOKEN` nor `NPM_ID_TOKEN` provided, unable to publish packages',
         )
         return
       }
