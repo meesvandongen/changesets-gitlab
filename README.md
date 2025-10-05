@@ -91,7 +91,7 @@ release:
 
 There are two ways to authenticate with npm when publishing:
 
-1. Trusted Publishers (recommended): Configure npm Trusted Publishers for your GitLab pipeline (see the npm docs: https://docs.npmjs.com/trusted-publishers#supported-cicd-providers). When the pipeline runs, npm will inject an `NPM_ID_TOKEN`, which this tool detects. In this mode you do NOT need to set `NPM_TOKEN`, and no `.npmrc` file is required—the npm CLI exchanges the identity token automatically.
+1. Trusted Publishers (recommended): Configure npm Trusted Publishers for your GitLab pipeline (see the npm docs: <https://docs.npmjs.com/trusted-publishers#supported-cicd-providers>). When the pipeline runs, npm will inject an `NPM_ID_TOKEN`, which this tool detects. In this mode you do NOT need to set `NPM_TOKEN`, and no `.npmrc` file is required—the npm CLI exchanges the identity token automatically.
 2. Classic Automation Token: Create an [npm automation token](https://docs.npmjs.com/creating-and-viewing-authentication-tokens) (without 2FA on publish) and add it as a [custom environment variable in GitLab](https://docs.gitlab.com/ee/ci/variables/#custom-cicd-variables) named `NPM_TOKEN`.
 
 For any of the methods, create a file at `.gitlab-ci.yml` with the following content:
