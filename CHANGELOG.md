@@ -1,5 +1,11 @@
 # changesets-gitlab
 
+## 0.14.0
+
+### Minor Changes
+
+- [`730655b`](https://github.com/un-ts/changesets-gitlab/commit/730655b340cd005f3ca704a1590118140c4ba126) Thanks [@meesvandongen](https://github.com/meesvandongen)! - Add support for Trusted Publishers
+
 ## 0.13.4
 
 ### Patch Changes
