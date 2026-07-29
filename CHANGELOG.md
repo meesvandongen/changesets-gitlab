@@ -1,5 +1,16 @@
 # changesets-gitlab
 
+## 0.14.0
+
+### Minor Changes
+
+- [`95fe0a2`](https://github.com/un-ts/changesets-gitlab/commit/95fe0a2e39a2d66b7888063a6ac4aa66b49a03a9) Thanks [@meesvandongen](https://github.com/meesvandongen)! - Add support for Trusted Publishers
+
+### Patch Changes
+
+- [#241](https://github.com/un-ts/changesets-gitlab/pull/241) [`8d9cd84`](https://github.com/un-ts/changesets-gitlab/commit/8d9cd84abb1d591b11da834a6d787dcca6e3fa56) Thanks [@maxkarkowski](https://github.com/maxkarkowski)! - Upgrade `@actions/core` to resolve security advisories in its Undici
+  dependency.
+
 ## 0.13.4
 
 ### Patch Changes
