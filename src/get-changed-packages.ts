@@ -183,7 +183,10 @@ export const getChangedPackages = async ({
     changedPackages: (packages.tool === 'root'
       ? packages.packages
       : packages.packages.filter(pkg =>
-          changedFiles.some(changedFile => changedFile.includes(pkg.dir)),
+          changedFiles.some(
+            changedFile =>
+              changedFile === pkg.dir || changedFile.startsWith(`${pkg.dir}/`),
+          ),
         )
     )
       .filter(
